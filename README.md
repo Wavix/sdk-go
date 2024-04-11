@@ -1,9 +1,5 @@
 # Wavix Go SDK
 
-[![Version](https://img.shields.io/github/v/release/Wavix/sdk-go)](https://github.com/Wavix/sdk-go/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/Wavix/sdk-go)](https://goreportcard.com/report/github.com/Wavix/sdk-go)
-[![GoDoc](https://godoc.org/github.com/Wavix/sdk-go?status.svg)](https://pkg.go.dev/github.com/Wavix/sdk-go)
-
 Wavix Go SDK provides convenient and easy-to-understand functions for interacting with the Wavix API. You can use this package to integrate your Go application or service with Wavix functionality.
 
 The current list of Wavix HTTP REST API can be found here: https://wavix.com/api
