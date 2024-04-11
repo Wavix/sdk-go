@@ -29,22 +29,16 @@ import (
 
 func main() {
     instance := wavix.Init(wavix.ClientOptions{Appid: "<YOUR APPID>"})
-     
-    from := "2023-06-01"
-    to := "2023-12-31"
-    cdrType := "placed"
-    page := 1
-    perPage := 5
 
     cdrList, err := instance.Cdr.GetCdrList(wavix.GetCdrListQueryParams{
-		Type:               cdrType,
-		RequiredDateParams: utils.RequiredDateParams{From: from, To: to}, 
-        PaginationParams: utils.PaginationParams{Page: page, PerPage: perPage}
+        Type:   "placed",
+        RequiredDateParams: utils.RequiredDateParams{From: "2023-06-01", To: "2023-12-31"}, 
+        PaginationParams: utils.PaginationParams{Page: 1, PerPage: 5}
     })
 
-	if err != nil {
-		panic(err.Message)
-	}
+    if err != nil {
+        panic(err.Message)
+    }
 
     ...
 }
