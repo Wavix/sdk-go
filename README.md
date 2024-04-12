@@ -30,10 +30,15 @@ import (
 func main() {
     instance := wavix.Init(wavix.ClientOptions{Appid: "<YOUR APPID>"})
 
+    from := time.Date(2023, 6, 1, 0, 0, 0, 0, time.UTC)
+    to := time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC)
+
     cdrList, err := instance.Cdr.GetCdrList(wavix.GetCdrListQueryParams{
         Type:   "placed",
-        RequiredDateParams: utils.RequiredDateParams{From: "2023-06-01", To: "2023-12-31"}, 
-        PaginationParams: utils.PaginationParams{Page: 1, PerPage: 5}
+        RequiredDateParams: utils.RequiredDateParams{
+            From: utils.QueryDateParams(from),
+            To:   utils.QueryDateParams(to),
+            }, PaginationParams: utils.PaginationParams{Page: 1, PerPage: 5}
     })
 
     if err != nil {
@@ -43,6 +48,7 @@ func main() {
     ...
 }
 ```
+
 ## License
 
 This SDK is distributed under the MIT License. See [LICENSE](./LICENSE) for more detailed information.
