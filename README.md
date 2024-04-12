@@ -49,6 +49,14 @@ func main() {
 }
 ```
 
+## Contributing
+
+We welcome contributions from the community. If you'd like to contribute, please fork the repository, make your changes, and submit a pull request. For major changes, please open an issue first to discuss what you would like to change.
+
+## Support and Contact
+
+If you encounter any issues or have questions about the SDK, please create an issue on our GitHub repository. For direct support, you can contact us at support@wavix.com.
+
 ## License
 
 This SDK is distributed under the MIT License. See [LICENSE](./LICENSE) for more detailed information.
