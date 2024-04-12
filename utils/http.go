@@ -51,34 +51,34 @@ func InitHttpConfig(baseUrl string, appId string) *HttpConfig {
 func Get[T any](config HttpConfig, path string, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	request, _ := http.NewRequest(http.MethodGet, url, nil)
-	return HttpRequest[T](request, url, nil, resultType)
+	return HttpRequest[T](request, url, resultType)
 }
 
 func Post[T any](config HttpConfig, path string, payload interface{}, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	jsonData, _ := json.Marshal(payload)
 	request, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
-	return HttpRequest[T](request, url, payload, resultType)
+	return HttpRequest[T](request, url, resultType)
 }
 
 func Put[T any](config HttpConfig, path string, payload interface{}, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	jsonData, _ := json.Marshal(payload)
 	request, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonData))
-	return HttpRequest[T](request, url, payload, resultType)
+	return HttpRequest[T](request, url, resultType)
 }
 
 func Patch[T any](config HttpConfig, path string, payload interface{}, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	jsonData, _ := json.Marshal(payload)
 	request, _ := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(jsonData))
-	return HttpRequest[T](request, url, payload, resultType)
+	return HttpRequest[T](request, url, resultType)
 }
 
 func Delete[T any](config HttpConfig, path string, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	request, _ := http.NewRequest(http.MethodDelete, url, nil)
-	return HttpRequest[T](request, url, nil, resultType)
+	return HttpRequest[T](request, url, resultType)
 }
 
 func Download(config HttpConfig, path string) ([]byte, *HttpErrorResponse) {
@@ -93,7 +93,7 @@ func Upload(config HttpConfig, path string, data FileData) (*HttpSuccessBasicRes
 	return uploadFile(request, data)
 }
 
-func HttpRequest[T any](request *http.Request, url string, payload interface{}, successResponse T) (*T, *HttpErrorResponse) {
+func HttpRequest[T any](request *http.Request, url string, successResponse T) (*T, *HttpErrorResponse) {
 	var errorResponse = HttpErrorResponse{Success: false, Message: "Internal server error"}
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
