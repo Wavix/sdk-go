@@ -58,7 +58,3 @@ func getBaseURL(baseURL string) string {
 
 	return baseURL
 }
-
-func (w *Instance) Version() string {
-	return "0.0.1"
-}
