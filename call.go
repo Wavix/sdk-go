@@ -60,9 +60,13 @@ const (
 
 const (
 	AnsweredEventType    EventType = "answered"
+	BusyEventType        EventType = "busy"
 	CallSetupEventType   EventType = "call_setup"
+	CancelledEventType   EventType = "cancelled"
 	CompletedEventType   EventType = "completed"
-	InCallEventEventType EventType = "in_call_event"
+	EarlyMediaEventType  EventType = "early_media"
+	OnCallEventEventType EventType = "on_call_event"
+	RejectedEventType    EventType = "rejected"
 	RingingEventType     EventType = "ringing"
 )
 
@@ -74,46 +78,53 @@ type Call struct {
 	AnsweredAt string `json:"call_answered"`
 }
 
-type InCallEventData interface{}
-type DigitsAndReasonEventData struct {
+type OnCallEventPayload interface{}
+
+type AudioEventPayload struct {
+	PlaybackId string `json:"playback_id"`
+	Status     string `json:"status"`
+}
+
+type CollectCompletedPayload struct {
 	Digits string `json:"digits"`
 	Reason string `json:"reason"`
 }
 
-type PlaybackIdEventData struct {
-	PlaybackId string `json:"playback_id"`
-}
-
 type CallEventPayload struct {
-	InCallEvent     string          `json:"in_call_event"`
-	InCallEventData InCallEventData `json:"in_call_event_data"`
+	Type    string              `json:"type"`
+	Payload OnCallEventPayload  `json:"payload"`
 }
 
 func (payload *CallEventPayload) UnmarshalJSON(data []byte) error {
 	var tmp struct {
-		InCallEvent     string          `json:"in_call_event"`
-		InCallEventData json.RawMessage `json:"in_call_event_data"`
+		Type    string          `json:"type"`
+		Payload json.RawMessage `json:"payload"`
 	}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
 		return err
 	}
 
-	payload.InCallEvent = tmp.InCallEvent
+	payload.Type = tmp.Type
 
-	var digitsReasonEventData DigitsAndReasonEventData
-	if err := json.Unmarshal(tmp.InCallEventData, &digitsReasonEventData); err == nil {
-		payload.InCallEventData = digitsReasonEventData
-		return nil
+	switch tmp.Type {
+	case "audio":
+		var audioPayload AudioEventPayload
+		if err := json.Unmarshal(tmp.Payload, &audioPayload); err != nil {
+			return err
+		}
+		payload.Payload = audioPayload
+	case "collect_completed":
+		var collectPayload CollectCompletedPayload
+		if err := json.Unmarshal(tmp.Payload, &collectPayload); err != nil {
+			return err
+		}
+		payload.Payload = collectPayload
+	default:
+		return fmt.Errorf("unknown on_call_event type: %s", tmp.Type)
 	}
 
-	var playbackIdEventData PlaybackIdEventData
-	if err := json.Unmarshal(tmp.InCallEventData, &playbackIdEventData); err == nil {
-		payload.InCallEventData = playbackIdEventData
-		return nil
-	}
-
-	return fmt.Errorf("unknown in_call_event_data type")
+	return nil
 }
 
 type StartCallPayload struct {
@@ -168,13 +179,15 @@ type CollectDTMFPayload struct {
 
 type CallEvent struct {
 	Uuid            string            `json:"uuid"`
+	Direction       string            `json:"direction"`
 	EventType       EventType         `json:"event_type"`
 	EventTime       string            `json:"event_time"`
 	EventPayload    *CallEventPayload `json:"event_payload"`
 	From            string            `json:"from"`
 	To              string            `json:"to"`
 	CallStarted     string            `json:"call_started"`
-	CallAnswered    string            `json:"call_answered"`
+	CallAnswered    *string           `json:"call_answered"`
+	CallCompleted   *string           `json:"call_completed"`
 	MachineDetected bool              `json:"machine_detected"`
 	Tag             string            `json:"tag"`
 }
