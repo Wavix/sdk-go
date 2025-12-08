@@ -16,11 +16,14 @@ type CallServiceInterface interface {
 	Disconnect()
 	OnEvent(callback EventCallback)
 	GetList() (*CallResponse, *utils.HttpErrorResponse)
+	GetCall(callId string) (*GetCallResponse, *utils.HttpErrorResponse)
 	StartCall(payload StartCallPayload) (*CallEvent, *StartCallErrorResponse)
 	PlayAudio(callId string, payload PlayAudioPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
+	StopAudio(callId string) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
 	Tts(callId string, payload TtsPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
 	Transfer(callId string, payload TransferPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
 	CollectDTMF(callId string, payload CollectDTMFPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
+	UpdateCall(callId string, payload UpdateCallPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
 	Hangup(callId string) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse)
 }
 
@@ -68,6 +71,8 @@ const (
 	OnCallEventEventType EventType = "on_call_event"
 	RejectedEventType    EventType = "rejected"
 	RingingEventType     EventType = "ringing"
+	FailedEventType      EventType = "failed"
+	TransferEventType    EventType = "transfer"
 )
 
 type Call struct {
@@ -91,8 +96,8 @@ type CollectCompletedPayload struct {
 }
 
 type CallEventPayload struct {
-	Type    string              `json:"type"`
-	Payload OnCallEventPayload  `json:"payload"`
+	Type    string             `json:"type"`
+	Payload OnCallEventPayload `json:"payload"`
 }
 
 func (payload *CallEventPayload) UnmarshalJSON(data []byte) error {
@@ -128,11 +133,13 @@ func (payload *CallEventPayload) UnmarshalJSON(data []byte) error {
 }
 
 type StartCallPayload struct {
-	From             string `validate:"required" json:"from"`
-	To               string `validate:"required" json:"to"`
-	StatusCallback   string `validate:"required" json:"status_callback"`
-	CallRecording    bool   `json:"call_recording"`
-	MachineDetection bool   `json:"machine_detection"`
+	From               string `validate:"required" json:"from"`
+	To                 string `validate:"required" json:"to"`
+	CallbackUrl        string `validate:"required" json:"callback_url"`
+	Recording          bool   `json:"recording"`
+	VoicemailDetection bool   `json:"voicemail_detection"`
+	Timeout            int    `json:"timeout,omitempty"`
+	Tag                string `json:"tag,omitempty"`
 }
 
 type StartCallErrorResponse struct {
@@ -142,16 +149,14 @@ type StartCallErrorResponse struct {
 }
 
 type PlayAudioPayload struct {
-	TimeoutBeforePlaying  int    `json:"timeout_before_playing,omitempty"`
-	TimeoutBetweenPlaying int    `json:"timeout_between_playing,omitempty"`
-	AudioUrl              string `validate:"required,url" json:"audio_file"`
+	AudioUrl string `validate:"required,url" json:"audio_file"`
 }
 
 type TtsPayload struct {
 	Text               string `validate:"required" json:"text"`
-	Voice              string `validate:"required,oneof=Ivy Joanna Kendra Kimberly Salli Joey Justin Matthew Conchita Lucia Enrique Marlene Vicki Hans Russian Tatyana Maxim" json:"voice"`
-	DelayBeforePlaying int    `json:"delay_before_playing"`
-	MaxRepeatCount     int    `json:"max_repeat_count"`
+	Voice              string `json:"voice,omitempty"`
+	DelayBeforePlaying int    `json:"delay_before_playing,omitempty"`
+	MaxRepeatCount     int    `json:"max_repeat_count,omitempty"`
 }
 
 type TransferPayload struct {
@@ -252,7 +257,17 @@ func (s *CallService) Disconnect() {
 }
 
 func (s *CallService) GetList() (*CallResponse, *utils.HttpErrorResponse) {
-	return utils.Get[CallResponse](*s.http, "/v1/call", CallResponse{})
+	return utils.Get(*s.http, "/v1/calls", CallResponse{})
+}
+
+type GetCallResponse struct {
+	Success bool      `json:"success"`
+	Call    CallEvent `json:"call"`
+}
+
+func (s *CallService) GetCall(callId string) (*GetCallResponse, *utils.HttpErrorResponse) {
+	url := path.Join("/v1/calls", callId)
+	return utils.Get(*s.http, url, GetCallResponse{})
 }
 
 func (s *CallService) StartCall(payload StartCallPayload) (*CallEvent, *StartCallErrorResponse) {
@@ -263,7 +278,7 @@ func (s *CallService) StartCall(payload StartCallPayload) (*CallEvent, *StartCal
 		return nil, &StartCallErrorResponse{Success: false, Message: err.Error(), Error: map[string]string{}}
 	}
 
-	callEvent, httpError := utils.Post[CallEvent](*s.http, "/v1/call", payload, CallEvent{})
+	callEvent, httpError := utils.Post(*s.http, "/v1/calls", payload, CallEvent{})
 
 	if httpError != nil {
 		return nil, &StartCallErrorResponse{Success: false, Message: httpError.Message, Error: map[string]string{}}
@@ -280,9 +295,9 @@ func (s *CallService) PlayAudio(callId string, payload PlayAudioPayload) (*utils
 		return nil, &utils.HttpErrorResponse{Message: err.Error()}
 	}
 
-	url := path.Join("/v1/call", callId, "play")
+	url := path.Join("/v1/calls", callId, "play")
 
-	return utils.Post[utils.HttpSuccessBasicResponse](*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
+	return utils.Post(*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
 }
 
 /*
@@ -297,9 +312,13 @@ func (s *CallService) Tts(callId string, payload TtsPayload) (*utils.HttpSuccess
 		return nil, &utils.HttpErrorResponse{Message: err.Error()}
 	}
 
-	url := path.Join("/v1/call", callId, "tts")
+	if payload.Voice == "" {
+		payload.Voice = "Joey"
+	}
 
-	return utils.Post[utils.HttpSuccessBasicResponse](*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
+	url := path.Join("/v1/calls", callId, "tts")
+
+	return utils.Post(*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
 }
 
 func (s *CallService) Transfer(callId string, payload TransferPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse) {
@@ -310,9 +329,9 @@ func (s *CallService) Transfer(callId string, payload TransferPayload) (*utils.H
 		return nil, &utils.HttpErrorResponse{Message: err.Error()}
 	}
 
-	url := path.Join("/v1/call", callId, "transfer")
+	url := path.Join("/v1/calls", callId, "transfer")
 
-	return utils.Post[utils.HttpSuccessBasicResponse](*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
+	return utils.Post(*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
 }
 
 func (s *CallService) CollectDTMF(callId string, payload CollectDTMFPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse) {
@@ -323,13 +342,36 @@ func (s *CallService) CollectDTMF(callId string, payload CollectDTMFPayload) (*u
 		return nil, &utils.HttpErrorResponse{Message: err.Error()}
 	}
 
-	url := path.Join("/v1/call", callId, "collect")
+	url := path.Join("/v1/calls", callId, "collect")
 
-	return utils.Post[utils.HttpSuccessBasicResponse](*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
+	return utils.Post(*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
 }
 
 func (s *CallService) Hangup(callId string) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse) {
-	url := path.Join("/v1/call", callId)
+	url := path.Join("/v1/calls", callId)
 
-	return utils.Delete[utils.HttpSuccessBasicResponse](*s.http, url, utils.HttpSuccessBasicResponse{Success: true})
+	return utils.Delete(*s.http, url, utils.HttpSuccessBasicResponse{Success: true})
+}
+
+type UpdateCallPayload struct {
+	Tag string `validate:"required" json:"tag"`
+}
+
+func (s *CallService) UpdateCall(callId string, payload UpdateCallPayload) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse) {
+	validate := utils.GetValidate()
+	err := validate.Struct(payload)
+
+	if err != nil {
+		return nil, &utils.HttpErrorResponse{Message: err.Error()}
+	}
+
+	url := path.Join("/v1/calls", callId)
+
+	return utils.Patch(*s.http, url, payload, utils.HttpSuccessBasicResponse{Success: true})
+}
+
+func (s *CallService) StopAudio(callId string) (*utils.HttpSuccessBasicResponse, *utils.HttpErrorResponse) {
+	url := path.Join("/v1/calls", callId, "audio")
+
+	return utils.Delete(*s.http, url, utils.HttpSuccessBasicResponse{Success: true})
 }
