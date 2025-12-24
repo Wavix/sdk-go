@@ -48,55 +48,63 @@ func InitHttpConfig(baseUrl string, appId string) *HttpConfig {
 	return &HttpConfig{BaseUrl: baseUrl, AppId: appId}
 }
 
+func (c *HttpConfig) GetUrl(path string) string {
+	return c.BaseUrl + path
+}
+
+func (c *HttpConfig) NewRequest(method, url string, body io.Reader) (*http.Request, error) {
+	request, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	if c.AppId != "" {
+		request.Header.Set("Authorization", "Bearer "+c.AppId)
+	}
+	return request, nil
+}
+
 func Get[T any](config HttpConfig, path string, resultType T) (*T, *HttpErrorResponse) {
-	url := getUrl(config, path)
-	request, _ := http.NewRequest(http.MethodGet, url, nil)
-	setAuthHeader(request, config)
+	url := config.GetUrl(path)
+	request, _ := config.NewRequest(http.MethodGet, url, nil)
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Post[T any](config HttpConfig, path string, payload interface{}, resultType T) (*T, *HttpErrorResponse) {
-	url := getUrl(config, path)
+	url := config.GetUrl(path)
 	jsonData, _ := json.Marshal(payload)
-	request, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
-	setAuthHeader(request, config)
+	request, _ := config.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Put[T any](config HttpConfig, path string, payload interface{}, resultType T) (*T, *HttpErrorResponse) {
-	url := getUrl(config, path)
+	url := config.GetUrl(path)
 	jsonData, _ := json.Marshal(payload)
-	request, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonData))
-	setAuthHeader(request, config)
+	request, _ := config.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonData))
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Patch[T any](config HttpConfig, path string, payload interface{}, resultType T) (*T, *HttpErrorResponse) {
-	url := getUrl(config, path)
+	url := config.GetUrl(path)
 	jsonData, _ := json.Marshal(payload)
-	request, _ := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(jsonData))
-	setAuthHeader(request, config)
+	request, _ := config.NewRequest(http.MethodPatch, url, bytes.NewBuffer(jsonData))
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Delete[T any](config HttpConfig, path string, resultType T) (*T, *HttpErrorResponse) {
-	url := getUrl(config, path)
-	request, _ := http.NewRequest(http.MethodDelete, url, nil)
-	setAuthHeader(request, config)
+	url := config.GetUrl(path)
+	request, _ := config.NewRequest(http.MethodDelete, url, nil)
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Download(config HttpConfig, path string) ([]byte, *HttpErrorResponse) {
-	url := getUrl(config, path)
-	request, _ := http.NewRequest(http.MethodGet, url, nil)
-	setAuthHeader(request, config)
+	url := config.GetUrl(path)
+	request, _ := config.NewRequest(http.MethodGet, url, nil)
 	return downloadFile(request)
 }
 
 func Upload(config HttpConfig, path string, data FileData) (*HttpSuccessBasicResponse, *HttpErrorResponse) {
-	url := getUrl(config, path)
-	request, _ := http.NewRequest(http.MethodPost, url, nil)
-	setAuthHeader(request, config)
+	url := config.GetUrl(path)
+	request, _ := config.NewRequest(http.MethodPost, url, nil)
 	return uploadFile(request, data)
 }
 
@@ -239,21 +247,6 @@ func uploadFile(request *http.Request, data FileData) (*HttpSuccessBasicResponse
 	defer writer.Close()
 
 	return &HttpSuccessBasicResponse{Success: true}, nil
-}
-
-func setAuthHeader(request *http.Request, config HttpConfig) {
-	if config.AppId != "" {
-		request.Header.Set("Authorization", "Bearer " + config.AppId)
-	}
-}
-
-func getUrl(config HttpConfig, url string) string {
-	path := config.BaseUrl + url
-	if strings.Contains(path, "?") {
-		return path + "&appid=" + config.AppId
-	}
-
-	return path + "?appid=" + config.AppId
 }
 
 func getErrorDetails(obj map[string]interface{}) *HttpErrorResponse {
