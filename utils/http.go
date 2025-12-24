@@ -51,6 +51,7 @@ func InitHttpConfig(baseUrl string, appId string) *HttpConfig {
 func Get[T any](config HttpConfig, path string, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	request, _ := http.NewRequest(http.MethodGet, url, nil)
+	setAuthHeader(request, config)
 	return HttpRequest[T](request, url, resultType)
 }
 
@@ -58,6 +59,7 @@ func Post[T any](config HttpConfig, path string, payload interface{}, resultType
 	url := getUrl(config, path)
 	jsonData, _ := json.Marshal(payload)
 	request, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
+	setAuthHeader(request, config)
 	return HttpRequest[T](request, url, resultType)
 }
 
@@ -65,6 +67,7 @@ func Put[T any](config HttpConfig, path string, payload interface{}, resultType 
 	url := getUrl(config, path)
 	jsonData, _ := json.Marshal(payload)
 	request, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonData))
+	setAuthHeader(request, config)
 	return HttpRequest[T](request, url, resultType)
 }
 
@@ -72,24 +75,28 @@ func Patch[T any](config HttpConfig, path string, payload interface{}, resultTyp
 	url := getUrl(config, path)
 	jsonData, _ := json.Marshal(payload)
 	request, _ := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(jsonData))
+	setAuthHeader(request, config)
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Delete[T any](config HttpConfig, path string, resultType T) (*T, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	request, _ := http.NewRequest(http.MethodDelete, url, nil)
+	setAuthHeader(request, config)
 	return HttpRequest[T](request, url, resultType)
 }
 
 func Download(config HttpConfig, path string) ([]byte, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	request, _ := http.NewRequest(http.MethodGet, url, nil)
+	setAuthHeader(request, config)
 	return downloadFile(request)
 }
 
 func Upload(config HttpConfig, path string, data FileData) (*HttpSuccessBasicResponse, *HttpErrorResponse) {
 	url := getUrl(config, path)
 	request, _ := http.NewRequest(http.MethodPost, url, nil)
+	setAuthHeader(request, config)
 	return uploadFile(request, data)
 }
 
@@ -232,6 +239,12 @@ func uploadFile(request *http.Request, data FileData) (*HttpSuccessBasicResponse
 	defer writer.Close()
 
 	return &HttpSuccessBasicResponse{Success: true}, nil
+}
+
+func setAuthHeader(request *http.Request, config HttpConfig) {
+	if config.AppId != "" {
+		request.Header.Set("Authorization", "Bearer "+config.AppId)
+	}
 }
 
 func getUrl(config HttpConfig, url string) string {
