@@ -243,7 +243,7 @@ func uploadFile(request *http.Request, data FileData) (*HttpSuccessBasicResponse
 
 func setAuthHeader(request *http.Request, config HttpConfig) {
 	if config.AppId != "" {
-		request.Header.Set("Authorization", "Bearer "+config.AppId)
+		request.Header.Set("Authorization", "Bearer " + config.AppId)
 	}
 }
 

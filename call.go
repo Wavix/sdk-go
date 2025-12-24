@@ -216,8 +216,7 @@ func (s *CallService) Connect() *utils.HttpErrorResponse {
 		headers.Set("Authorization", "Bearer "+s.http.AppId)
 	}
 
-	dialer := websocket.DefaultDialer
-	s.ws, _, err = dialer.Dial(wsUrl, headers)
+	s.ws, _, err = websocket.DefaultDialer.Dial(wsUrl, headers)
 
 	if err != nil {
 		return &utils.HttpErrorResponse{Message: err.Error()}
