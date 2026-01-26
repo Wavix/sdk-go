@@ -169,17 +169,24 @@ type TransferPayload struct {
 	BPlaybackAudio       string `json:"b_playback_audio"`
 }
 
-type CollectDTMFAudioPayload struct {
-	Url            string `validate:"required" json:"url"`
-	StopOnKeypress bool   `json:"stop_on_keypress"`
+type CollectPromptSay struct {
+	Text     string `validate:"required" json:"text"`
+	Voice    string `validate:"required" json:"voice"`
+	Language string `json:"language,omitempty"`
 }
+
+type CollectPrompt struct {
+	Play string            `json:"play,omitempty"`
+	Say  *CollectPromptSay `json:"say,omitempty"`
+}
+
 type CollectDTMFPayload struct {
-	MinDigits            int                     `json:"min_digits,omitempty"`
-	MaxDigits            int                     `json:"max_digits,omitempty"`
-	Timeout              int                     `json:"timeout,omitempty"`
-	TerminationCharacter string                  `json:"termination_character,omitempty"`
-	Audio                CollectDTMFAudioPayload `json:"audio,omitempty"`
-	CallbackUrl          string                  `json:"callback_url,omitempty"`
+	MaxDigits            int            `json:"max_digits,omitempty"`
+	Timeout              int            `json:"timeout,omitempty"`
+	TerminationCharacter string         `json:"termination_character,omitempty"`
+	MaxAttempts          int            `json:"max_attempts,omitempty"`
+	StopOnKeypress       *bool          `json:"stop_on_keypress,omitempty"`
+	Prompt               *CollectPrompt `json:"prompt,omitempty"`
 }
 
 type CallEvent struct {
