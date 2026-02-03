@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"net/url"
 	"path"
 
@@ -215,9 +216,14 @@ func (s *CallService) Connect() *utils.HttpErrorResponse {
 		return &utils.HttpErrorResponse{Message: err.Error()}
 	}
 
-	wsUrl := "wss://" + parsedUrl.Host + "/sip?appid=" + s.http.AppId
+	wsUrl := "wss://" + parsedUrl.Host + "/sip"
 
-	s.ws, _, err = websocket.DefaultDialer.Dial(wsUrl, nil)
+	headers := make(http.Header)
+	if s.http.AppId != "" {
+		headers.Set("Authorization", "Bearer "+s.http.AppId)
+	}
+
+	s.ws, _, err = websocket.DefaultDialer.Dial(wsUrl, headers)
 
 	if err != nil {
 		return &utils.HttpErrorResponse{Message: err.Error()}
