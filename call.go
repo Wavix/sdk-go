@@ -91,9 +91,9 @@ type AudioEventPayload struct {
 	Status     string `json:"status"`
 }
 
-type CollectCompletedPayload struct {
+type CollectPayload struct {
 	Digits string `json:"digits"`
-	Reason string `json:"reason"`
+	Status string `json:"status"`
 }
 
 type CallEventPayload struct {
@@ -120,8 +120,8 @@ func (payload *CallEventPayload) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		payload.Payload = audioPayload
-	case "collect_completed":
-		var collectPayload CollectCompletedPayload
+	case "collect":
+		var collectPayload CollectPayload
 		if err := json.Unmarshal(tmp.Payload, &collectPayload); err != nil {
 			return err
 		}
@@ -183,6 +183,7 @@ type CollectPrompt struct {
 
 type CollectDTMFPayload struct {
 	MaxDigits            int            `json:"max_digits,omitempty"`
+	MinDigits            int            `json:"min_digits,omitempty"`
 	Timeout              int            `json:"timeout,omitempty"`
 	TerminationCharacter string         `json:"termination_character,omitempty"`
 	MaxAttempts          int            `json:"max_attempts,omitempty"`
