@@ -1,3 +1,12 @@
+> [!WARNING]
+> **This SDK is deprecated and no longer maintained.**
+> Use the new, actively maintained SDK instead:
+> **[`wavix-go-sdk`](https://github.com/Wavix/wavix-go-sdk)**
+>
+> ```sh
+> go get github.com/wavix/wavix-go-sdk
+> ```
+
 # Wavix Go SDK
 
 Wavix Go SDK provides convenient and easy-to-understand functions for interacting with the Wavix API. You can use this package to integrate your Go application or service with Wavix functionality.
